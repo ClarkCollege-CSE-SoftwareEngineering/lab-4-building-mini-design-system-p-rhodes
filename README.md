@@ -233,7 +233,7 @@ export { spacing, type SpacingKey } from './spacing';
 export { typography } from './typography';
 ```
 
-🤔 **Reflection Question:** Brad Frost describes design tokens as ensuring "design systems must account for the dynamic nature of content." How do these token files achieve that? What would happen if you wanted to change the success color across your entire application?
+🤔 **Reflection Question:** Brad Frost describes design tokens as ensuring _"design systems must account for the dynamic nature of content."_ How do these token files achieve that? What would happen if you wanted to change the success color across your entire application?
 
 ✅ **Checkpoint:** Your `src/tokens/` directory should have 4 files: `colors.ts`, `spacing.ts`, `typography.ts`, and `index.ts`.
 
@@ -595,7 +595,7 @@ describe('Atoms', () => {
 
 ✅ **Checkpoint:** Run `npm test` — all atom tests should pass.
 
-🤔 **Reflection Question:** Looking at the Button component, why do we define `sizeStyles` and `variantStyles` as separate objects rather than using if/else statements? How does this connect to Frost's idea that "atoms include basic HTML elements like form labels, inputs, buttons"?
+🤔 **Reflection Question:** Looking at the Button component, why do we define `sizeStyles` and `variantStyles` as separate objects rather than using if/else statements? How does this connect to Frost's idea that _"atoms include basic HTML elements like form labels, inputs, buttons"_?
 
 ---
 
@@ -811,7 +811,7 @@ describe('Molecules', () => {
 
 ✅ **Checkpoint:** Run `npm test` — all molecule tests should pass.
 
-🤔 **Reflection Question:** The Alert molecule composes Icon, Text, and Button atoms. How does this composition demonstrate Frost's point that molecules "take on their own properties and serve as the backbone of our design systems"? What would be harder if we built Alert without these reusable atoms?
+🤔 **Reflection Question:** The Alert molecule composes Icon, Text, and Button atoms. How does this composition demonstrate Frost's point that molecules _"take on their own properties and serve as the backbone of our design systems"_? What would be harder if we built Alert without these reusable atoms?
 
 ---
 
@@ -1180,7 +1180,7 @@ Your `README.md` must include:
 
 1. **Your Name and Date**
 
-2. **Reflection Section** (minimum 200 words) answering:
+2. 🤔 **Reflection Section** (minimum 200 words) answering:
    - How does organizing components into atoms, molecules, and organisms help with code reuse?
    - Describe how the design tokens you implemented support Frost's idea of "tiny Bootstraps" for each client.
    - What would change if you needed to support a dark mode theme in this design system?
@@ -1258,7 +1258,7 @@ export const colors = { ... } as const;
 2. Verify GitHub Actions passes all checks
 3. Submit your repository URL via Canvas
 
-**Due:** Monday, February 2, 2026 at 11:59 PM
+**Due:** Monday of Week 5
 
 ---
 
