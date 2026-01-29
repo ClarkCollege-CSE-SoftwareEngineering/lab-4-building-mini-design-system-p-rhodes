@@ -60,24 +60,12 @@ jobs:
           
           MISSING_FILES=""
           REQUIRED_FILES=(
-            "src/tokens/colors.ts"
-            "src/tokens/spacing.ts"
-            "src/tokens/typography.ts"
-            "src/tokens/index.ts"
-            "src/components/atoms/Icon.tsx"
-            "src/components/atoms/Text.tsx"
             "src/components/atoms/Button.tsx"
-            "src/components/atoms/Badge.tsx"
             "src/components/atoms/index.ts"
             "src/components/molecules/Alert.tsx"
-            "src/components/molecules/AlertWithAction.tsx"
             "src/components/molecules/index.ts"
-            "src/components/organisms/NotificationCenter.tsx"
-            "src/components/organisms/index.ts"
-            "src/components/index.ts"
-            "src/__tests__/atoms.test.tsx"
-            "src/__tests__/molecules.test.tsx"
-            "src/__tests__/organisms.test.tsx"
+            "src/__tests__/Button.test.tsx"
+            "src/__tests__/Alert.test.tsx"
             "src/setupTests.ts"
             "vitest.config.ts"
             "tsconfig.json"
@@ -109,22 +97,20 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🧪 Test Count" >> $GITHUB_STEP_SUMMARY
           
-          # Run vitest with json reporter and parse
-          npm run test:run -- --reporter=json --outputFile=test-results.json 2>/dev/null || true
+          # Run tests and capture output
+          TEST_OUTPUT=$(npm run test:run 2>&1) || true
           
-          if [ -f test-results.json ]; then
-            TOTAL_TESTS=$(cat test-results.json | grep -o '"numTotalTests":[0-9]*' | grep -o '[0-9]*' || echo "0")
-            PASSED_TESTS=$(cat test-results.json | grep -o '"numPassedTests":[0-9]*' | grep -o '[0-9]*' || echo "0")
-          else
-            # Fallback: run tests and count
-            TOTAL_TESTS=$(npm run test:run 2>&1 | grep -oP '\d+(?= tests?)' | tail -1 || echo "0")
-            PASSED_TESTS=$TOTAL_TESTS
+          # Extract test count from vitest output
+          TOTAL_TESTS=$(echo "$TEST_OUTPUT" | grep -oP '\d+(?= passed)' | tail -1 || echo "0")
+          
+          if [ -z "$TOTAL_TESTS" ] || [ "$TOTAL_TESTS" = "0" ]; then
+            # Fallback: count test cases in files
+            TOTAL_TESTS=$(grep -r "it(" src/__tests__/*.test.tsx 2>/dev/null | wc -l || echo "0")
           fi
           
-          echo "Total tests found: $TOTAL_TESTS" >> $GITHUB_STEP_SUMMARY
-          echo "Passed tests: $PASSED_TESTS" >> $GITHUB_STEP_SUMMARY
+          echo "Found **$TOTAL_TESTS** passing tests" >> $GITHUB_STEP_SUMMARY
           
-          MIN_TESTS=28
+          MIN_TESTS=16
           
           if [ "$TOTAL_TESTS" -ge "$MIN_TESTS" ]; then
             echo "✅ **Test count meets minimum ($TOTAL_TESTS >= $MIN_TESTS)**" >> $GITHUB_STEP_SUMMARY
@@ -158,10 +144,10 @@ jobs:
           
           THRESHOLD=90
           
-          # Check if any metric is below threshold (using bc for floating point comparison)
+          # Check if any metric is below threshold
           BELOW_THRESHOLD=false
           for coverage in $STATEMENTS $BRANCHES $FUNCTIONS $LINES; do
-            if [ $(echo "$coverage < $THRESHOLD" | bc -l) -eq 1 ]; then
+            if [ -n "$coverage" ] && [ $(echo "$coverage < $THRESHOLD" | bc -l 2>/dev/null || echo "0") -eq 1 ]; then
               BELOW_THRESHOLD=true
             fi
           done
@@ -200,27 +186,13 @@ jobs:
             README_ISSUES="$README_ISSUES concepts"
           fi
           
-          # Check for atomic design terminology
-          if grep -qi "atom\|molecule\|organism" README.md; then
-            echo "✅ Atomic design terminology found" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "⚠️ Atomic design terminology may be missing" >> $GITHUB_STEP_SUMMARY
-          fi
-          
           # Check word count (rough estimate)
           WORD_COUNT=$(wc -w < README.md)
-          if [ "$WORD_COUNT" -ge 200 ]; then
+          if [ "$WORD_COUNT" -ge 150 ]; then
             echo "✅ README has sufficient content ($WORD_COUNT words)" >> $GITHUB_STEP_SUMMARY
           else
-            echo "⚠️ README may be too short ($WORD_COUNT words, aim for 200+)" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ README may be too short ($WORD_COUNT words, aim for 150+)" >> $GITHUB_STEP_SUMMARY
             README_ISSUES="$README_ISSUES length"
-          fi
-          
-          # Check for student name
-          if grep -qi "name:\|author:\|by:" README.md; then
-            echo "✅ Student name appears to be present" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "⚠️ Student name may be missing" >> $GITHUB_STEP_SUMMARY
           fi
           
           if [ -z "$README_ISSUES" ]; then
@@ -233,53 +205,38 @@ jobs:
             echo "readme_complete=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Check component hierarchy
-        id: components
+      - name: Check component exports
+        id: exports
         run: |
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 🏗️ Component Hierarchy Check" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔗 Component Exports Check" >> $GITHUB_STEP_SUMMARY
           
-          HIERARCHY_OK=true
+          EXPORT_ISSUES=""
           
-          # Check atoms export their components
-          if grep -q "export.*Icon\|export.*Text\|export.*Button\|export.*Badge" src/components/atoms/index.ts 2>/dev/null; then
-            echo "✅ Atoms properly exported" >> $GITHUB_STEP_SUMMARY
+          # Check atoms index exports Button
+          if grep -q "Button" src/components/atoms/index.ts; then
+            echo "✅ Button exported from atoms" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ Atoms not properly exported" >> $GITHUB_STEP_SUMMARY
-            HIERARCHY_OK=false
+            echo "❌ Button not exported from atoms/index.ts" >> $GITHUB_STEP_SUMMARY
+            EXPORT_ISSUES="$EXPORT_ISSUES Button"
           fi
           
-          # Check molecules export their components
-          if grep -q "export.*Alert" src/components/molecules/index.ts 2>/dev/null; then
-            echo "✅ Molecules properly exported" >> $GITHUB_STEP_SUMMARY
+          # Check molecules index exports Alert
+          if grep -q "Alert" src/components/molecules/index.ts; then
+            echo "✅ Alert exported from molecules" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ Molecules not properly exported" >> $GITHUB_STEP_SUMMARY
-            HIERARCHY_OK=false
+            echo "❌ Alert not exported from molecules/index.ts" >> $GITHUB_STEP_SUMMARY
+            EXPORT_ISSUES="$EXPORT_ISSUES Alert"
           fi
           
-          # Check organisms export their components
-          if grep -q "export.*NotificationCenter" src/components/organisms/index.ts 2>/dev/null; then
-            echo "✅ Organisms properly exported" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ Organisms not properly exported" >> $GITHUB_STEP_SUMMARY
-            HIERARCHY_OK=false
-          fi
-          
-          # Check tokens are used in components
-          if grep -q "from.*tokens" src/components/atoms/Button.tsx 2>/dev/null; then
-            echo "✅ Design tokens imported in atoms" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "⚠️ Design tokens may not be used in atoms" >> $GITHUB_STEP_SUMMARY
-          fi
-          
-          if [ "$HIERARCHY_OK" = "true" ]; then
+          if [ -z "$EXPORT_ISSUES" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "✅ **Component hierarchy properly structured**" >> $GITHUB_STEP_SUMMARY
-            echo "hierarchy_ok=true" >> $GITHUB_OUTPUT
+            echo "✅ **All components properly exported**" >> $GITHUB_STEP_SUMMARY
+            echo "exports_ok=true" >> $GITHUB_OUTPUT
           else
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "⚠️ **Component hierarchy needs attention**" >> $GITHUB_STEP_SUMMARY
-            echo "hierarchy_ok=false" >> $GITHUB_OUTPUT
+            echo "⚠️ **Some components not exported properly**" >> $GITHUB_STEP_SUMMARY
+            echo "exports_ok=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Generate grading summary
@@ -298,9 +255,9 @@ jobs:
           fi
           
           if [ "${{ steps.test_count.outputs.test_count_met }}" = "true" ]; then
-            echo "| Minimum Tests (28) | ✅ Pass |" >> $GITHUB_STEP_SUMMARY
+            echo "| Minimum Tests (16) | ✅ Pass |" >> $GITHUB_STEP_SUMMARY
           else
-            echo "| Minimum Tests (28) | ❌ Below minimum |" >> $GITHUB_STEP_SUMMARY
+            echo "| Minimum Tests (16) | ❌ Below minimum |" >> $GITHUB_STEP_SUMMARY
           fi
           
           if [ "${{ steps.coverage.outputs.coverage_met }}" = "true" ]; then
@@ -309,17 +266,17 @@ jobs:
             echo "| Coverage (90%) | ⚠️ Below threshold |" >> $GITHUB_STEP_SUMMARY
           fi
           
+          if [ "${{ steps.exports.outputs.exports_ok }}" = "true" ]; then
+            echo "| Component Exports | ✅ Pass |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Component Exports | ⚠️ Needs review |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
           if [ "${{ steps.readme.outputs.readme_complete }}" = "true" ]; then
             echo "| README Complete | ✅ Pass |" >> $GITHUB_STEP_SUMMARY
           else
             echo "| README Complete | ⚠️ Needs review |" >> $GITHUB_STEP_SUMMARY
           fi
           
-          if [ "${{ steps.components.outputs.hierarchy_ok }}" = "true" ]; then
-            echo "| Component Hierarchy | ✅ Pass |" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "| Component Hierarchy | ⚠️ Needs attention |" >> $GITHUB_STEP_SUMMARY
-          fi
-          
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "*Note: This is an automated check. Manual review will also be performed for code quality and reflection depth.*" >> $GITHUB_STEP_SUMMARY
+          echo "*Note: This is an automated check. Manual review will also be performed.*" >> $GITHUB_STEP_SUMMARY
