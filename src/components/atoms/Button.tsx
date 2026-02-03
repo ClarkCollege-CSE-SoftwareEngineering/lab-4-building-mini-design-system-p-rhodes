@@ -20,7 +20,7 @@ export interface ButtonProps {
 
 /**
  * Button atom - interactive button element.
- * 
+ *
  * Atoms like buttons are functional on their own,
  * but designed to be composed into larger patterns.
  */
@@ -33,13 +33,24 @@ export function Button({
   'aria-label': ariaLabel,
   type = 'button',
 }: ButtonProps) {
-  const sizeStyles: Record<ButtonProps['size'] & string, React.CSSProperties> = {
-    sm: { padding: `${spacing.xs} ${spacing.sm}`, fontSize: typography.fontSize.sm },
-    md: { padding: `${spacing.sm} ${spacing.md}`, fontSize: typography.fontSize.base },
-    lg: { padding: `${spacing.md} ${spacing.lg}`, fontSize: typography.fontSize.lg },
+  // Size styles using spacing and typography tokens
+  const sizeStyles: Record<string, React.CSSProperties> = {
+    sm: {
+      padding: `${spacing.xs} ${spacing.sm}`,
+      fontSize: typography.fontSize.sm,
+    },
+    md: {
+      padding: `${spacing.sm} ${spacing.md}`,
+      fontSize: typography.fontSize.base,
+    },
+    lg: {
+      padding: `${spacing.md} ${spacing.lg}`,
+      fontSize: typography.fontSize.lg,
+    },
   };
 
-  const variantStyles: Record<ButtonProps['variant'] & string, React.CSSProperties> = {
+  // Variant styles using color tokens
+  const variantStyles: Record<string, React.CSSProperties> = {
     primary: {
       backgroundColor: colors.info.icon,
       color: colors.neutral.white,
